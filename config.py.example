@@ -1,0 +1,14 @@
+settings = {
+    "vk_redirect": {
+        "client_id": "7054884",
+        "redirect_uri": "penisgovnodavalka.com/",
+        "scope": "email",
+        "type": "code",
+    },
+    "vk_settings": {
+        "client_id": "7054884",
+        "client_secret": "4HxXnXGnednizpBSJ6yZ",
+        "redirect_uri": "penisgovnodavalka.com/",
+    },
+    "bot_prefix": "!!"
+}
