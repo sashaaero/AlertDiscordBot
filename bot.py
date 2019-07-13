@@ -60,7 +60,6 @@ class DiscordClient(discord.Client):
     async def on_ready():
         print('Logged')
 
-    @db_session
     async def on_message(self, message):
         if message.author == self.user:
             return
@@ -71,9 +70,11 @@ class DiscordClient(discord.Client):
 
             if command == "auth":
                 if len(args) == 1 and args[0] == "vk":
-                    user = User.get(discord_id=message.author.id)
+                    with db_session:
+                        user = User.get(discord_id=message.author.id)
                     if not user:
-                        user = User(discord_id=message.author.id, token=generate_token())
+                        with db_session:
+                            user = User(discord_id=message.author.id, token=generate_token())
 
                     await message.channel.send(
                         f'Отправь мне токен {user.token} в лс тут: {settings["vk_link"]}')
@@ -82,19 +83,22 @@ class DiscordClient(discord.Client):
             if command == "alert":
                 if len(args) == 2 and args[0] == "vk":
                     discord_id = re.sub("\D", "", args[1])
-                    user_to = User[discord_id]
+                    with db_session:
+                        user_to = User[discord_id]
                     if user_to and user_to.vk_id:
                         # get last alert
-                        user_from = User[message.author.id]
-                        last_alert = select(a for a in Alert if a.user_from == user_from and a.user_to == user_to)
-                        last_alert = last_alert.order_by(lambda a: desc(a.dt)).limit(1)[:]
+                        with db_session:
+                            user_from = User[message.author.id]
+                            last_alert = select(a for a in Alert if a.user_from == user_from and a.user_to.id == user_to.id)
+                            last_alert = last_alert.order_by(lambda a: desc(a.dt)).limit(1)[:]
                         now = datetime.datetime.now()
                         if last_alert:
                             if (now - last_alert[0].dt).seconds < settings['alert_vk_timeout']:
                                 await message.channel.send(settings['alert_vk_timeout_error_message'])
                                 return
                         self.send_message_vk(user_to.vk_id, message.author.name, message.channel)
-                        Alert(user_from=user_from, user_to=user_to, via='vk', dt=now)
+                        with db_session:
+                            Alert(user_from=User[message.author.id], user_to=User[discord_id], via='vk', dt=now)
                     else:
                         await message.channel.send('Пользователь не привязал свою страницу VK')
             else:
