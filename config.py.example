@@ -1,14 +1,13 @@
 settings = {
-    "vk_redirect": {
-        "client_id": "7054884",
-        "redirect_uri": "penisgovnodavalka.com/",
-        "scope": "email",
-        "type": "code",
-    },
-    "vk_settings": {
-        "client_id": "7054884",
-        "client_secret": "4HxXnXGnednizpBSJ6yZ",
-        "redirect_uri": "penisgovnodavalka.com/",
+    "vk_link": "https://vk.com/sashaaero",
+    "vk_token": "your_token",
+    "db": {
+        "db": "db_name",
+        "host": "127.0.0.1",
+        "port": 3306,
+        "user": "username",
+        "passwd": "password",
+        "provider": "mysql"
     },
     "bot_prefix": "!!"
 }
