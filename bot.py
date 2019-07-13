@@ -1,8 +1,8 @@
-import vk, discord, logging, requests, string, random, asyncio, json, re
+import vk, discord, logging, requests, string, random, asyncio, json, re, datetime
 from config import settings
 from urllib import parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from db import db, User, db_session
+from db import db, User, db_session, Alert, select, desc
 
 
 def generate_token(len=32):
@@ -42,15 +42,18 @@ class S(BaseHTTPRequestHandler):
                     user = User.get(token=message)
                     if user:
                         user.vk_id = user_id
-        # with db_session:
-        # User(vk_id=user_id, discord_id=)
 
 
 class DiscordClient(discord.Client):
     prefix = settings['bot_prefix']
 
-    def send_message_vk(self, vk_id, author, channel):
-        api.messages.send(user_id=vk_id, message=f"Вас позвал {author} на сервере {channel.guild}({channel}). Перейти к кАНАЛУ: https://www.discordapp.com/channels/{channel.guild.id}/{channel.id  }", v=5.38)
+    @staticmethod
+    def send_message_vk(vk_id, author, channel):
+        message = settings['alert_vk_message'].format({
+            'username': author, 'servername': channel.guild, 'channel': channel,
+            'server_id': channel.guild.id, 'channel_id': channel.id
+        })
+        api.messages.send(user_id=vk_id, message=message, v=5.38)
         # 319954540
 
     @staticmethod
@@ -81,9 +84,19 @@ class DiscordClient(discord.Client):
                 if len(args) == 2 and args[0] == "vk":
                     discord_id = re.sub("\D", "", args[1])
                     with db_session:
-                        user = User[discord_id]
-                    if user:
-                        self.send_message_vk(user.vk_id, message.author.name, message.channel)
+                        user_to = User[discord_id]
+                    if user_to and user_to.vk_id:
+                        # get last alert
+                        user_from = User[message.author.id]
+                        last_alert = select(a for a in Alert if a.user_from == user_from and a.user_to == user_to)
+                        last_alert = last_alert.order_by(lambda a: a.dt, desc).limit(1)
+                        now = datetime.datetime.now()
+                        if last_alert:
+                            if now - last_alert < settings['alert_vk_timeout']:
+                                message.channel.send(settings['alert_vk_timeout_error_message'])
+                                return
+                        self.send_message_vk(user_to.vk_id, message.author.name, message.channel)
+                        Alert(user_from=user_from, user_to=user_to, via='vk', dt=now)
                     else:
                         message.channel.send('Пользователь не привязал свою страницу VK')
             else:

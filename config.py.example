@@ -9,5 +9,9 @@ settings = {
         "passwd": "password",
         "provider": "mysql"
     },
-    "bot_prefix": "!!"
+    "bot_prefix": "!!",
+    "alert_vk_message": "Вас позвал {username} на сервере {servername}({channel})."
+                        " Перейти к каналу: https://www.discordapp.com/channels/{server_id}/{channel_id}",
+    'alert_vk_timeout': 300,
+    'alert_vk_timeout_error_message': 'Звать одного и того же человека можно не чаще чем раз в пять минут'
 }
