@@ -10,16 +10,6 @@ def generate_token(len=32):
     return ''.join(random.choice(alphabet) for _ in range(len))
 
 
-def get_user_by_code(code):
-    URL = "https://oauth.vk.com/access_token"
-    PARAMS = settings['vk_settings']
-    PARAMS['code'] = code
-    r = requests.get(url=URL, params=PARAMS)
-    data = r.json()
-    user_id = data.get('user_id', 0)
-    return user_id
-
-
 class S(BaseHTTPRequestHandler):
     def _set_response(self):
         self.send_response(200)
@@ -28,13 +18,13 @@ class S(BaseHTTPRequestHandler):
 
     @db_session
     def do_POST(self):
-        if self.path.startswith('/vk_handle'):
+        if self.path.startswith(settings['vk_handler_path']):
             content_len = int(self.headers.get('Content-Length'))
             data = json.loads(self.rfile.read(content_len))
             if "type" in data:
                 if data['type'] == 'confirmation':
                     self._set_response()
-                    self.wfile.write("ec44f68f")
+                    self.wfile.write(settings['vk_confirmation_code'])
                 elif data['type'] == 'message_new':
                     user_id = data['object']['from_id']
                     message = data['object']['text']
@@ -42,6 +32,7 @@ class S(BaseHTTPRequestHandler):
                     user = User.get(token=message)
                     if user:
                         user.vk_id = user_id
+                        api.messages.send(user_id=user_id, message="Активация прошла успешно", v=settings['vk_api_version'])
 
 
 class DiscordClient(discord.Client):
@@ -53,7 +44,7 @@ class DiscordClient(discord.Client):
             'username': author, 'servername': channel.guild, 'channel': channel,
             'server_id': channel.guild.id, 'channel_id': channel.id
         })
-        api.messages.send(user_id=vk_id, message=message, v=5.38)
+        api.messages.send(user_id=vk_id, message=message, v=settings['vk_api_version'])
         # 319954540
 
     @staticmethod
@@ -75,21 +66,25 @@ class DiscordClient(discord.Client):
                     if not user:
                         with db_session:
                             user = User(discord_id=message.author.id, token=generate_token())
-
-                    await message.channel.send(
-                        f'Отправь мне токен {user.token} в лс тут: {settings["vk_link"]}')
+                    if user.vk_id:
+                        await message.author.send(
+                            'Вы уже привязали свою страницу VK')
+                    else:
+                        await message.author.send(
+                            f'Отправь мне токен {user.token} в лс тут: {settings["vk_link"]}')
                 else:
                     message.channel.send('anonist')  # todo show help
             if command == "alert":
                 if len(args) == 2 and args[0] == "vk":
                     discord_id = re.sub("\D", "", args[1])
                     with db_session:
-                        user_to = User[discord_id]
+                        user_to = User.get(discord_id=discord_id)
                     if user_to and user_to.vk_id:
                         # get last alert
                         with db_session:
                             user_from = User[message.author.id]
-                            last_alert = select(a for a in Alert if a.user_from == user_from and a.user_to.id == user_to.id)
+                            last_alert = select(a for a in Alert if a.user_from == user_from and
+                                                a.user_to.discord_id == user_to.discord_id)
                             last_alert = last_alert.order_by(lambda a: desc(a.dt)).limit(1)[:]
                         now = datetime.datetime.now()
                         if last_alert:
@@ -106,7 +101,7 @@ class DiscordClient(discord.Client):
                 # await message.channel.send('')
 
 
-def run(server_class=HTTPServer, handler_class=S, port=8000):
+def run_http_server(server_class=HTTPServer, handler_class=S, port=8000):
     logging.basicConfig(level=logging.INFO)
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
@@ -122,9 +117,8 @@ def run(server_class=HTTPServer, handler_class=S, port=8000):
 if __name__ == '__main__':
     db.bind(**settings['db'])
     db.generate_mapping(create_tables=True)
-    # run()
     session = vk.Session(access_token=settings['vk_token'])
     api = vk.API(session)
-
+    # todo run_http_server()
     client = DiscordClient()
     client.run('MzExMzU4NTMyNjMwODcyMDY0.XSj-6Q.-rmaXBO4vjXmcaABk_p7-g1ZqnU')
