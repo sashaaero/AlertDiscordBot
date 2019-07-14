@@ -15,6 +15,7 @@ class S(BaseHTTPRequestHandler):
         if self.path.startswith(settings['vk_handler_path']):
             content_len = int(self.headers.get('Content-Length'))
             data = json.loads(self.rfile.read(content_len))
+            print(data)
             if "type" in data:
                 if data['type'] == 'confirmation':
                     self._set_response()
@@ -33,7 +34,7 @@ class S(BaseHTTPRequestHandler):
                             api.messages.send(user_id=user_id, message="Вы уже привязали страницу ранее",
                                               v=settings['vk_api_version'])
 
-def run_http_server(server_class=HTTPServer, handler_class=S, port=8000):
+def run_http_server(server_class=HTTPServer, handler_class=S, port=80):
     logging.basicConfig(level=logging.INFO)
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
