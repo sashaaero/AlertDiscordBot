@@ -1,12 +1,16 @@
 settings = {
-    "vk_link": "https://vk.com/sashaaero",
-    "vk_token": "your_token",
+    "http_server_port": 80,
+    "vk_confirmation_code": "ec44f68f",
+    "vk_handler_path": '/vk_handle',
+    "vk_link": "https://vk.com/club179249818",
+    "vk_api_version": 5.38,
+    "vk_token": "94fd6aa62799b77f17acb3e9b72ceeb4fa2df431904f4341f8638e41ea040800ee863cd7efb4149b21d13",
     "db": {
-        "db": "db_name",
+        "db": "discord_python",
         "host": "127.0.0.1",
         "port": 3306,
-        "user": "username",
-        "passwd": "password",
+        "user": "root",
+        "passwd": "root",
         "provider": "mysql"
     },
     "bot_prefix": "!!",
