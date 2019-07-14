@@ -58,7 +58,9 @@ class DiscordClient(discord.Client):
                     if user_to and user_to.vk_id:
                         # get last alert
                         with db_session:
-                            user_from = message.author.id
+                            user_from = User.get(discord_id=message.author.id)
+                            if not user_from:
+                                user_from = User(discord_id=message.author.id, token=generate_token())
                             last_alert = select(a for a in Alert if a.user_from == user_from and
                                                 a.user_to.discord_id == user_to.discord_id)
                             last_alert = last_alert.order_by(lambda a: desc(a.dt)).limit(1)[:]
