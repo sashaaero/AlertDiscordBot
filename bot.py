@@ -35,6 +35,7 @@ class DiscordClient(discord.Client):
 
             if command == "auth":
                 if len(args) == 1 and args[0] == "vk":
+                    # todo validate duplicate requests
                     with db_session:
                         user = User.get(discord_id=message.author.id)
                     if not user:
