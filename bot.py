@@ -1,38 +1,12 @@
 import vk, discord, logging, requests, string, random, asyncio, json, re, datetime
 from config import settings
 from urllib import parse
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from db import db, User, db_session, Alert, select, desc
 
 
 def generate_token(len=32):
     alphabet = string.ascii_lowercase + string.ascii_uppercase + string.digits
     return ''.join(random.choice(alphabet) for _ in range(len))
-
-
-class S(BaseHTTPRequestHandler):
-    def _set_response(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-
-    @db_session
-    def do_POST(self):
-        if self.path.startswith(settings['vk_handler_path']):
-            content_len = int(self.headers.get('Content-Length'))
-            data = json.loads(self.rfile.read(content_len))
-            if "type" in data:
-                if data['type'] == 'confirmation':
-                    self._set_response()
-                    self.wfile.write(settings['vk_confirmation_code'])
-                elif data['type'] == 'message_new':
-                    user_id = data['object']['from_id']
-                    message = data['object']['text']
-
-                    user = User.get(token=message)
-                    if user:
-                        user.vk_id = user_id
-                        api.messages.send(user_id=user_id, message="Активация прошла успешно", v=settings['vk_api_version'])
 
 
 class DiscordClient(discord.Client):
@@ -101,24 +75,10 @@ class DiscordClient(discord.Client):
                 # await message.channel.send('')
 
 
-def run_http_server(server_class=HTTPServer, handler_class=S, port=8000):
-    logging.basicConfig(level=logging.INFO)
-    server_address = ('', port)
-    httpd = server_class(server_address, handler_class)
-    logging.info('Starting httpd...\n')
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    httpd.server_close()
-    logging.info('Stopping httpd...\n')
-
-
 if __name__ == '__main__':
     db.bind(**settings['db'])
     db.generate_mapping(create_tables=True)
     session = vk.Session(access_token=settings['vk_token'])
     api = vk.API(session)
-    # todo run_http_server()
     client = DiscordClient()
     client.run('MzExMzU4NTMyNjMwODcyMDY0.XSj-6Q.-rmaXBO4vjXmcaABk_p7-g1ZqnU')
