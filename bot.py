@@ -38,6 +38,7 @@ class DiscordClient(discord.Client):
                     # todo validate duplicate requests
                     with db_session:
                         user = User.get(discord_id=message.author.id)
+                        vk_id = user.vk_id
                     if not user:
                         with db_session:
                             user = User(discord_id=message.author.id, token=generate_token())
