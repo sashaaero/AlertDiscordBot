@@ -34,7 +34,7 @@ class S(BaseHTTPRequestHandler):
                             api.messages.send(user_id=user_id, message="Вы уже привязали страницу ранее",
                                               v=settings['vk_api_version'])
             self._set_response()
-            self.wfile.write(bytes(settings['vk_confirmation_code'], "utf-8"))
+            self.wfile.write(bytes("ok", "utf-8"))
 
 def run_http_server(server_class=HTTPServer, handler_class=S, port=settings['http_server_port']):
     logging.basicConfig(level=logging.INFO)
