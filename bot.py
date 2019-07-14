@@ -40,7 +40,8 @@ class DiscordClient(discord.Client):
                     if not user:
                         with db_session:
                             user = User(discord_id=message.author.id, token=generate_token())
-                    if user.vk_id:
+                            vk_id = user.vk_id
+                    if vk_id:
                         await message.author.send(
                             'Вы уже привязали свою страницу VK')
                     else:
